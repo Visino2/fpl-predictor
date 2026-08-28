@@ -1,0 +1,19 @@
+# Netlify config for the frontend (static Vite/React SPA).
+# Deploy: Netlify -> Add new site -> Import from Git -> pick this repo.
+# Netlify reads base/command/publish from here; set VITE_API_BASE in the
+# Netlify UI (Site configuration -> Environment variables) to your Render
+# backend URL, e.g. https://fpl-predictor-api.onrender.com
+
+[build]
+  base = "frontend"
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# SPA fallback (harmless even though the app currently has no client router)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

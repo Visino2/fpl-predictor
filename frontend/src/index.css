@@ -1,0 +1,8 @@
+@import "tailwindcss";
+@config "../tailwind.config.ts";
+
+@layer base {
+  body {
+    @apply bg-fpl-purple-dark text-fpl-white font-body antialiased;
+  }
+}

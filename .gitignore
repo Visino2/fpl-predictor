@@ -1,0 +1,41 @@
+venv/
+__pycache__/
+*.pyc
+.env
+
+frontend/node_modules/
+frontend/dist/
+
+# --- backend/data: ignore everything, then whitelist what the RUNTIME needs
+#     so a fresh Render deploy can serve + refresh predictions without first
+#     running the training pipeline. The big training-only files stay out.
+backend/data/*
+!backend/data/bootstrap.json
+!backend/data/fixtures.json
+!backend/data/player_histories.json
+!backend/data/predictions_gw*.csv
+
+# of the historical raw data, the runtime only needs 2025-26/teams.csv
+# (last-season team-strength fallback). merged_gw.csv / fixtures.csv there
+# are ~10 MB and training-only.
+!backend/data/historical/
+backend/data/historical/*
+!backend/data/historical/2025-26/
+backend/data/historical/2025-26/*
+!backend/data/historical/2025-26/teams.csv
+
+# training-only / regenerable — retrain locally, commit the resulting model
+backend/data/training_table.csv
+backend/data/historical_multi_season.csv
+
+# per-run caches: refetched from the FPL API on startup, and user-specific
+backend/data/my_team.json
+backend/data/entry_history.json
+backend/data/job_log.txt
+
+# prediction/accuracy log — initialised empty on the server (tracker.py does
+# CREATE TABLE IF NOT EXISTS); on Render's ephemeral disk it resets per deploy
+# anyway. Attach a persistent disk + FPL_DATA_DIR to keep it (see DEPLOY.md).
+backend/data/tracking.db
+
+# models: DO commit the trained model so the API has something to load

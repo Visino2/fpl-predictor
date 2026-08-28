@@ -1,0 +1,10 @@
+requests
+pandas
+lightgbm
+scikit-learn
+joblib
+pulp
+fastapi
+uvicorn[standard]
+pydantic
+apscheduler

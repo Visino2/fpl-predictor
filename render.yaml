@@ -1,0 +1,27 @@
+# Render Blueprint for the backend API (FastAPI + in-process weekly scheduler).
+# Deploy: Render dashboard -> New -> Blueprint -> pick this repo.
+#
+# Free plan notes:
+#  - the service sleeps after ~15 min idle; first request after that cold-starts
+#    in ~50s. Fine for occasional phone use.
+#  - no persistent disk on free, so backend/data/tracking.db (accuracy history)
+#    resets on every redeploy. To keep it: upgrade to a paid plan, add a Disk
+#    mounted at /var/data, and set FPL_DATA_DIR=/var/data (see DEPLOY.md).
+#  - keep numInstances at 1 — the weekly scheduler runs in-process and would
+#    double-fire on multiple instances.
+services:
+  - type: web
+    name: fpl-predictor-api
+    runtime: python
+    plan: free
+    numInstances: 1
+    buildCommand: pip install -r requirements.txt
+    startCommand: cd backend && uvicorn api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      # Set this to your Netlify site URL after the frontend is deployed,
+      # e.g. https://your-site.netlify.app  (comma-separate multiple; "*" = any)
+      - key: ALLOWED_ORIGINS
+        sync: false
