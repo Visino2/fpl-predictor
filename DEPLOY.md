@@ -3,6 +3,24 @@
 **Backend** (FastAPI + weekly scheduler) → **Render** free web service
 **Frontend** (Vite/React SPA) → **Netlify** free static site
 
+## Live instance (deployed 2026-08-28)
+
+| | URL |
+|---|---|
+| Frontend | https://fpl-predictor-aba.netlify.app |
+| Backend  | https://fpl-predictor-api-jhwt.onrender.com |
+| Repo     | https://github.com/Visino2/fpl-predictor |
+
+- **Backend** is git-connected via Render Blueprint (`render.yaml`) → `git push` auto-redeploys.
+  `ALLOWED_ORIGINS=https://fpl-predictor-aba.netlify.app` is set on the service.
+- **Frontend** was deployed with the Netlify CLI (`netlify deploy --prod`), **not**
+  git-connected — so `git push` does NOT rebuild it. After any change, from `frontend/`:
+  `npm run build && netlify deploy --prod --dir=dist`
+  (`VITE_API_BASE` is already stored in Netlify env; run `netlify init` if you want
+  auto-deploy on push instead.)
+- If the Netlify site ever 401s: the team had "require login for all sites" on —
+  `netlify api updateSite --data '{"site_id":"<id>","body":{"sso_login":false}}'`.
+
 This app is single-user: your FPL entry id is hardcoded
 (`MY_ENTRY_ID = 6849416` in `backend/api/routes/*.py` and
 `frontend/src/hooks/useSquad.ts`). If you forked this, change those first.
