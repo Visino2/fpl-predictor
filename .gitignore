@@ -12,7 +12,9 @@ frontend/dist/
 backend/data/*
 !backend/data/bootstrap.json
 !backend/data/fixtures.json
-!backend/data/player_histories.json
+# player_histories.json: NOT committed (7.9 MB, rewritten every refresh).
+# The weekly job fetches it from the FPL API within ~1 min of first boot;
+# until then only /predictions/refresh needs it, and that fetches it itself.
 !backend/data/predictions_gw*.csv
 
 # of the historical raw data, the runtime only needs 2025-26/teams.csv
