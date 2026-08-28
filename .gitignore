@@ -41,3 +41,6 @@ backend/data/job_log.txt
 backend/data/tracking.db
 
 # models: DO commit the trained model so the API has something to load
+
+# Local Netlify folder
+.netlify
