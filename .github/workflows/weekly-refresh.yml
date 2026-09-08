@@ -1,0 +1,79 @@
+name: Weekly data + predictions refresh
+
+# Regenerates bootstrap/fixtures + predictions_gw{N}.csv and commits them back
+# to main. Render is git-connected, so the push auto-redeploys the API with the
+# new gameweek's data baked in. This replaces the in-process APScheduler job in
+# backend/src/weekly_job.py, which can't run reliably on Render's free plan
+# (the service sleeps after ~15 min idle and its filesystem is ephemeral).
+
+on:
+  schedule:
+    # 06:00 UTC daily. FPL deadlines move around (midweek / rearranged rounds),
+    # so rather than guessing the day, refresh every morning: predict.py always
+    # writes the *upcoming* gameweek's file, so this rolls GW{N} -> GW{N+1}
+    # automatically the day after a deadline, and keeps the current file fresh
+    # with the latest team news in between.
+    - cron: "0 6 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: weekly-refresh
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      # player_histories.json is ~8 MB and gitignored — one API request per
+      # player to rebuild from scratch. Cache it between runs so each run only
+      # fetches players added since last time. The date-stamped key rotates the
+      # cache weekly; restore-keys falls back to the newest older cache.
+      - name: Restore player_histories cache
+        uses: actions/cache@v4
+        with:
+          path: backend/data/player_histories.json
+          key: player-histories-${{ github.run_id }}
+          restore-keys: |
+            player-histories-
+
+      - name: Fetch FPL data (bootstrap, fixtures, player histories)
+        working-directory: backend
+        run: python -m src.fetch_data
+
+      - name: Generate predictions for the upcoming gameweek
+        working-directory: backend
+        run: python -m src.predict
+
+      - name: Commit refreshed data if it changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Only the runtime-whitelisted files (see .gitignore) — never the
+          # big training-only artifacts or the uncached histories blob.
+          git add backend/data/bootstrap.json \
+                  backend/data/fixtures.json \
+                  backend/data/predictions_gw*.csv \
+                  backend/data/historical/2025-26/teams.csv
+
+          if git diff --cached --quiet; then
+            echo "No data changes — nothing to commit."
+            exit 0
+          fi
+
+          latest_gw=$(ls backend/data/predictions_gw*.csv \
+            | sed -E 's/.*predictions_gw([0-9]+)\.csv/\1/' | sort -n | tail -1)
+          git commit -m "Auto-refresh GW${latest_gw} data + predictions [skip ci]"
+          git push
